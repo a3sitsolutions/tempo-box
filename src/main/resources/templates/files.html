@@ -60,7 +60,12 @@
                                             <i class="fas fa-file me-2"></i>
                                             <span th:text="${file.originalFilename}"></span>
                                         </td>
-                                        <td th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></td>
+                                        <td>
+                                            <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
+                                            <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
+                                            <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
+                                            <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
+                                        </td>
                                         <td th:text="${#temporals.format(file.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                                         <td th:text="${#temporals.format(file.expiresAt, 'dd/MM/yyyy HH:mm')}"></td>
                                         <td>
@@ -97,9 +102,18 @@
                                             </button>
                                             <a th:unless="${file.expired}" 
                                                th:href="@{'/files/download/' + ${file.fileId} + '?token=' + ${file.accessToken}}" 
-                                               class="btn btn-success btn-sm">
+                                               class="btn btn-success btn-sm me-1">
                                                 <i class="fas fa-download"></i>
                                             </a>
+                                            <form th:unless="${file.expired}" 
+                                                  style="display: inline-block;"
+                                                  th:action="@{'/files/expire/' + ${file.fileId}}" 
+                                                  method="post"
+                                                  onsubmit="return confirm('Tem certeza que deseja expirar este arquivo? Esta ação não pode ser desfeita.');">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -132,7 +146,12 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Tamanho:</strong></td>
-                                    <td th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></td>
+                                    <td>
+                                        <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
+                                        <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
+                                        <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
+                                        <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>Tipo:</strong></td>

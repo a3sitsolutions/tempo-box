@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -113,6 +114,26 @@ public class FileStorageService {
         return fileMetadataRepository.findByAuthTokenAndExpiresAtAfter(authToken, LocalDateTime.now());
     }
 
+    @Transactional
+    public void expireFile(String fileId, String authToken) {
+        Optional<FileMetadata> metadataOpt = fileMetadataRepository.findByFileIdAndAuthToken(fileId, authToken);
+        
+        if (metadataOpt.isPresent()) {
+            FileMetadata metadata = metadataOpt.get();
+            
+            try {
+                Path filePath = Paths.get(uploadDir, metadata.getStoredFilename());
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                System.err.println("Error deleting file: " + metadata.getStoredFilename());
+            }
+            
+            metadata.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+            fileMetadataRepository.save(metadata);
+        }
+    }
+
+    @Transactional
     public void cleanupExpiredFiles() {
         List<FileMetadata> expiredFiles = fileMetadataRepository.findExpiredFiles(LocalDateTime.now());
         

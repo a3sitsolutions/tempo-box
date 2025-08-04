@@ -113,6 +113,18 @@ public class WebController {
         return "redirect:/login?logout";
     }
 
+    @PostMapping("/files/expire/{fileId}")
+    public String expireFile(@PathVariable String fileId, HttpSession session) {
+        String authToken = (String) session.getAttribute("authToken");
+        
+        if (authToken == null || !staticAuthToken.equals(authToken)) {
+            return "redirect:/login";
+        }
+        
+        fileStorageService.expireFile(fileId, authToken);
+        return "redirect:/files";
+    }
+
     @GetMapping("/")
     public String home() {
         return "redirect:/login";

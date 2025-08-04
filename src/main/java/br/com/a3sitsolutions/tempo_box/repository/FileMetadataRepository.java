@@ -2,6 +2,7 @@ package br.com.a3sitsolutions.tempo_box.repository;
 
 import br.com.a3sitsolutions.tempo_box.entity.FileMetadata;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -18,8 +19,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
     
     List<FileMetadata> findByAuthTokenAndExpiresAtAfter(String authToken, LocalDateTime now);
     
+    Optional<FileMetadata> findByFileIdAndAuthToken(String fileId, String authToken);
+    
     @Query("SELECT f FROM FileMetadata f WHERE f.expiresAt < ?1")
     List<FileMetadata> findExpiredFiles(LocalDateTime now);
     
+    @Modifying
     void deleteByExpiresAtBefore(LocalDateTime expiredBefore);
 }
