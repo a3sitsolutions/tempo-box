@@ -22,6 +22,8 @@ env:
   GRADLE_USER_HOME: /home/apolo/.gradle
   GRADLE_CACHE_DIR: /home/apolo/.gradle-cache/${{ github.repository }}
   DOCKER_CACHE_DIR: /home/apolo/.docker-cache/${{ github.repository }}
+  # Build artifacts cache local
+  BUILD_CACHE_DIR: /etc/dev/cache/${{ github.repository }}/build-${{ github.run_id }}
 
 jobs:
   # 🧪 Job 1: Testes
@@ -111,12 +113,14 @@ jobs:
     - name: 🏗️ Build da aplicação
       run: ./gradlew build -x test --parallel --build-cache
 
-    - name: 📦 Upload dos artefatos do build
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: build/libs/
-        retention-days: 7
+    - name: 📦 Salvar artefatos do build no cache local
+      run: |
+        echo "📦 Salvando artefatos do build no cache local..."
+        sudo mkdir -p ${{ env.BUILD_CACHE_DIR }}
+        sudo chmod 755 ${{ env.BUILD_CACHE_DIR }}
+        cp -r build/libs/* ${{ env.BUILD_CACHE_DIR }}/
+        echo "✅ Artefatos salvos em: ${{ env.BUILD_CACHE_DIR }}"
+        ls -la ${{ env.BUILD_CACHE_DIR }}/
 
   # 🐳 Job 3: Build e Push do Docker
   docker:
@@ -129,11 +133,18 @@ jobs:
     - name: 📥 Checkout do código
       uses: actions/checkout@v4
 
-    - name: 📦 Download dos artefatos do build
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: build/libs/
+    - name: 📦 Recuperar artefatos do build do cache local
+      run: |
+        echo "📦 Recuperando artefatos do build do cache local..."
+        if [ -d "${{ env.BUILD_CACHE_DIR }}" ]; then
+          mkdir -p build/libs/
+          cp -r ${{ env.BUILD_CACHE_DIR }}/* build/libs/
+          echo "✅ Artefatos recuperados de: ${{ env.BUILD_CACHE_DIR }}"
+          ls -la build/libs/
+        else
+          echo "❌ Cache não encontrado em: ${{ env.BUILD_CACHE_DIR }}"
+          exit 1
+        fi
 
     - name: 🐳 Configurar Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -179,7 +190,7 @@ jobs:
     if: always()
     
     steps:
-    - name: 🧹 Limpeza das imagens Docker locais
+    - name: 🧹 Limpeza das imagens Docker locais e cache de build
       run: |
         echo "🧹 Limpando imagens Docker locais..."
         docker rmi ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
@@ -187,6 +198,10 @@ jobs:
         
         # Limpar apenas imagens dangling, manter cache
         docker image prune -f || true
+        
+        # Limpar cache de build desta execução
+        echo "🧹 Limpando cache de build da execução..."
+        sudo rm -rf ${{ env.BUILD_CACHE_DIR }} || true
         
         echo "📊 Tamanhos dos caches após limpeza:"
         echo "Gradle: $(du -sh ${{ env.GRADLE_CACHE_DIR }} 2>/dev/null || echo 'vazio')"
