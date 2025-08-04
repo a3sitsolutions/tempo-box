@@ -155,6 +155,47 @@
             font-size: 0.9rem;
         }
 
+        .sortable-header {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .sortable-header:hover {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            transform: translateY(-1px);
+            color: white !important;
+        }
+
+        .sort-icon {
+            margin-left: 0.5rem;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .sortable-header.active .sort-icon {
+            opacity: 1;
+            color: var(--accent-color);
+        }
+
+        .sort-asc::after {
+            content: "\f0de";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
+        .sort-desc::after {
+            content: "\f0dd";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
+        .sort-none::after {
+            content: "\f0dc";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
         .table-modern thead th:first-child {
             border-top-left-radius: 12px;
         }
@@ -342,10 +383,38 @@
                             <table class="table table-modern">
                                 <thead>
                                     <tr>
-                                        <th><i class="fas fa-file me-2"></i>Arquivo</th>
-                                        <th><i class="fas fa-weight-hanging me-2"></i>Tamanho</th>
-                                        <th><i class="fas fa-plus me-2"></i>Criado</th>
-                                        <th><i class="fas fa-clock me-2"></i>Expira</th>
+                                        <th class="sortable-header" 
+                                            th:classappend="${currentSortBy == 'filename'} ? 'active' : ''"
+                                            data-sort="filename"
+                                            onclick="sortTable('filename')">
+                                            <i class="fas fa-file me-2"></i>Arquivo
+                                            <span class="sort-icon" 
+                                                  th:classappend="${currentSortBy == 'filename'} ? (${currentSortDir == 'asc'} ? 'sort-asc' : 'sort-desc') : 'sort-none'"></span>
+                                        </th>
+                                        <th class="sortable-header" 
+                                            th:classappend="${currentSortBy == 'filesize'} ? 'active' : ''"
+                                            data-sort="filesize"
+                                            onclick="sortTable('filesize')">
+                                            <i class="fas fa-weight-hanging me-2"></i>Tamanho
+                                            <span class="sort-icon" 
+                                                  th:classappend="${currentSortBy == 'filesize'} ? (${currentSortDir == 'asc'} ? 'sort-asc' : 'sort-desc') : 'sort-none'"></span>
+                                        </th>
+                                        <th class="sortable-header" 
+                                            th:classappend="${currentSortBy == 'createdAt'} ? 'active' : ''"
+                                            data-sort="createdAt"
+                                            onclick="sortTable('createdAt')">
+                                            <i class="fas fa-plus me-2"></i>Criado
+                                            <span class="sort-icon" 
+                                                  th:classappend="${currentSortBy == 'createdAt'} ? (${currentSortDir == 'asc'} ? 'sort-asc' : 'sort-desc') : 'sort-none'"></span>
+                                        </th>
+                                        <th class="sortable-header" 
+                                            th:classappend="${currentSortBy == 'expiresAt'} ? 'active' : ''"
+                                            data-sort="expiresAt"
+                                            onclick="sortTable('expiresAt')">
+                                            <i class="fas fa-clock me-2"></i>Expira
+                                            <span class="sort-icon" 
+                                                  th:classappend="${currentSortBy == 'expiresAt'} ? (${currentSortDir == 'asc'} ? 'sort-asc' : 'sort-desc') : 'sort-none'"></span>
+                                        </th>
                                         <th><i class="fas fa-signal me-2"></i>Status</th>
                                         <th><i class="fas fa-code-branch me-2"></i>Repo</th>
                                         <th><i class="fas fa-code-branch me-2"></i>Branch</th>
@@ -607,6 +676,57 @@
 
         // Store last refresh time
         localStorage.setItem('lastRefresh', new Date().toISOString());
+
+        // Table sorting functionality
+        function sortTable(column) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSort = urlParams.get('sortBy') || 'createdAt';
+            const currentDir = urlParams.get('sortDir') || 'desc';
+            
+            let newDir = 'asc';
+            if (currentSort === column) {
+                // Toggle direction if same column
+                newDir = currentDir === 'asc' ? 'desc' : 'asc';
+            } else if (column === 'createdAt') {
+                // Default for creation date is DESC
+                newDir = 'desc';
+            }
+            
+            // Update URL with new sorting parameters
+            urlParams.set('sortBy', column);
+            urlParams.set('sortDir', newDir);
+            
+            // Add loading state to clicked header
+            const clickedHeader = document.querySelector(`[data-sort="${column}"]`);
+            if (clickedHeader) {
+                clickedHeader.style.opacity = '0.7';
+                clickedHeader.innerHTML = clickedHeader.innerHTML.replace(
+                    /<span class="sort-icon[^>]*>.*?<\/span>/,
+                    '<span class="sort-icon"><i class="fas fa-spinner fa-spin"></i></span>'
+                );
+            }
+            
+            // Navigate to sorted page
+            window.location.search = urlParams.toString();
+        }
+        
+        // Add keyboard support for sorting
+        document.addEventListener('keydown', function(e) {
+            if (e.target.classList.contains('sortable-header') && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                const sortColumn = e.target.getAttribute('data-sort');
+                if (sortColumn) {
+                    sortTable(sortColumn);
+                }
+            }
+        });
+        
+        // Make sortable headers focusable for accessibility
+        document.querySelectorAll('.sortable-header').forEach(header => {
+            header.setAttribute('tabindex', '0');
+            header.setAttribute('role', 'button');
+            header.setAttribute('aria-label', `Ordenar por ${header.textContent.trim()}`);
+        });
     </script>
 </body>
 </html>

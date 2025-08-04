@@ -70,23 +70,28 @@ public class WebController {
     }
 
     @GetMapping("/files")
-    public String filesPage(HttpSession session, Model model) {
+    public String filesPage(HttpSession session, Model model,
+                           @RequestParam(value = "sortBy", required = false, defaultValue = "createdAt") String sortBy,
+                           @RequestParam(value = "sortDir", required = false, defaultValue = "desc") String sortDir) {
         String authToken = (String) session.getAttribute("authToken");
         String idToken = (String) session.getAttribute("idToken");
         System.out.println("Files page access - Session ID: " + session.getId());
         System.out.println("Files page access - Auth token from session: '" + authToken + "'");
         System.out.println("Files page access - ID token from session: '" + idToken + "'");
         System.out.println("Files page access - Expected token: '" + staticAuthToken + "'");
+        System.out.println("Files page access - Sort by: '" + sortBy + "', Sort dir: '" + sortDir + "'");
         
         if (authToken == null || !staticAuthToken.equals(authToken)) {
             System.out.println("Files page access - Authentication failed, redirecting to login");
             return "redirect:/login";
         }
 
-        System.out.println("Files page access - Authentication successful, loading files");
-        List<FileMetadata> files = fileStorageService.getFilesByAuthTokenAndIdToken(authToken, idToken);
+        System.out.println("Files page access - Authentication successful, loading files with sorting");
+        List<FileMetadata> files = fileStorageService.getFilesByAuthTokenAndIdTokenSorted(authToken, idToken, sortBy, sortDir);
         model.addAttribute("files", files);
-        model.addAttribute("idToken", idToken); // Para exibir na interface se necessário
+        model.addAttribute("idToken", idToken);
+        model.addAttribute("currentSortBy", sortBy);
+        model.addAttribute("currentSortDir", sortDir);
         return "files";
     }
 

@@ -118,10 +118,59 @@ public class FileStorageService {
 
     public List<FileMetadata> getFilesByAuthTokenAndIdToken(String authToken, String idToken) {
         if (idToken != null && !idToken.trim().isEmpty()) {
-            return fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfter(authToken, idToken, LocalDateTime.now());
+            return fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByCreatedAtDesc(authToken, idToken, LocalDateTime.now());
         } else {
-            return fileMetadataRepository.findByAuthTokenAndExpiresAtAfter(authToken, LocalDateTime.now());
+            return fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByCreatedAtDesc(authToken, LocalDateTime.now());
         }
+    }
+
+    public List<FileMetadata> getFilesByAuthTokenAndIdTokenSorted(String authToken, String idToken, String sortBy, String sortDir) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Default sort
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "createdAt";
+        }
+        if (sortDir == null || sortDir.trim().isEmpty()) {
+            sortDir = "desc";
+        }
+        
+        boolean hasIdToken = idToken != null && !idToken.trim().isEmpty();
+        
+        return switch (sortBy.toLowerCase()) {
+            case "filename" -> switch (sortDir.toLowerCase()) {
+                case "asc" -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByFilenameAsc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByFilenameAsc(authToken, now);
+                default -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByFilenameDesc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByFilenameDesc(authToken, now);
+            };
+            case "filesize" -> switch (sortDir.toLowerCase()) {
+                case "asc" -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByFileSizeAsc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByFileSizeAsc(authToken, now);
+                default -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByFileSizeDesc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByFileSizeDesc(authToken, now);
+            };
+            case "expiresat" -> switch (sortDir.toLowerCase()) {
+                case "asc" -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByExpiresAtAsc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByExpiresAtAsc(authToken, now);
+                default -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByExpiresAtDesc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByExpiresAtDesc(authToken, now);
+            };
+            default -> switch (sortDir.toLowerCase()) { // createdAt
+                case "asc" -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByCreatedAtAsc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByCreatedAtAsc(authToken, now);
+                default -> hasIdToken 
+                    ? fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfterOrderByCreatedAtDesc(authToken, idToken, now)
+                    : fileMetadataRepository.findByAuthTokenAndExpiresAtAfterOrderByCreatedAtDesc(authToken, now);
+            };
+        };
     }
 
     @Transactional
