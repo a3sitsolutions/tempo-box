@@ -84,6 +84,23 @@ A aplicação estará disponível em `http://localhost:8080`
 
 ## 🐳 Deploy com Docker
 
+### Configuração de Variáveis de Ambiente
+
+A aplicação utiliza variáveis de ambiente para configuração segura:
+
+```bash
+# Copiar arquivo de exemplo
+cp .env.example .env
+
+# Editar variáveis conforme necessário
+nano .env
+```
+
+**Principais variáveis:**
+- `AUTH_TOKEN`: Token de autenticação (configurado via secrets na pipeline)
+- `APP_VERSION`: Versão da aplicação  
+- `CLEANUP_INTERVAL`: Intervalo de limpeza automática
+
 ### Usando Docker Hub/Nexus
 
 A aplicação está disponível como imagem Docker no repositório Nexus:
@@ -105,8 +122,15 @@ O Docker Compose está configurado para comunicação interna entre os serviços
 git clone <repository-url>
 cd tempo-box
 
+# Configurar variáveis de ambiente (opcional)
+cp .env.example .env
+# Editar .env com suas configurações personalizadas
+
 # Inicie os serviços (PostgreSQL + Tempo Box)
 docker-compose up -d
+
+# Ou com variáveis específicas
+AUTH_TOKEN=meu-token-secreto docker-compose up -d
 
 # Visualizar logs
 docker-compose logs -f
@@ -297,10 +321,12 @@ a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
 a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:<commit-sha>
 ```
 
-### Secrets Configurados
-- `NEXUS_REPOSITORY`: a3s.nexus.maranguape.a3sitsolutions.com.br
+### Secrets Necessários
+- `NEXUS_REPOSITORY`: a3s.nexus.maranguape.a3sitsolutions.com.br  
+- `NEXUS_PORT`: 8082
 - `NEXUS_USER`: admin  
-- `NEXUS_PASSWORD`: ********
+- `NEXUS_PASSWORD`: ******** 
+- `AUTH_TOKEN`: ******** (Token de autenticação da aplicação)
 
 ### Otimizações de Performance
 - **🚀 Cache Gradle:** Dependências e wrapper cacheados
@@ -410,13 +436,21 @@ docker login a3s.nexus.maranguape.a3sitsolutions.com.br
 - Copiar todo o conteúdo do arquivo `docker-compose.portainer.yml`
 - Colar no editor do Portainer
 
-### 4. **Configurar Environment Variables (opcional)**
-Se quiser personalizar, adicione:
+### 4. **Configurar Environment Variables**
+**Obrigatório:** Definir o AUTH_TOKEN como variável de ambiente:
+```env
+AUTH_TOKEN=seu-token-secreto-seguro
+APP_VERSION=1.0.0
+CLEANUP_INTERVAL=3600000
+```
+
+**Opcionais para personalização:**
 ```env
 POSTGRES_PASSWORD=SuaSenhaSegura
-APP_AUTH_STATIC_TOKEN=seu-token-personalizado
 JAVA_OPTS=-Xmx2048m -Xms1024m
 ```
+
+> 💡 **Importante**: O `AUTH_TOKEN` deve ser definido nas variáveis de ambiente da stack no Portainer para segurança.
 
 ### 5. **Deploy da Stack**
 - Clicar em **Deploy the stack**

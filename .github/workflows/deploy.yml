@@ -17,6 +17,7 @@ env:
   IMAGE_NAME: tempo-box
   IMAGE_TAG: ${{ github.sha }}
   NEXUS_REGISTRY: ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}
+  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
   # Cache paths para self-hosted runner
   GRADLE_USER_HOME: /home/apolo/.gradle
   GRADLE_CACHE_DIR: /home/apolo/.gradle-cache/${{ github.repository }}
@@ -154,6 +155,8 @@ jobs:
         docker buildx build \
           --cache-from=type=local,src=${{ env.DOCKER_CACHE_DIR }} \
           --cache-to=type=local,dest=${{ env.DOCKER_CACHE_DIR }},mode=max \
+          --build-arg AUTH_TOKEN="${{ env.AUTH_TOKEN }}" \
+          --build-arg APP_VERSION="1.0.0" \
           --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
           --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           --load \
