@@ -16,7 +16,7 @@ on:
 env:
   IMAGE_NAME: tempo-box
   IMAGE_TAG: ${{ github.sha }}
-  NEXUS_REGISTRY: ${{ secrets.NEXUS_REPOSITORY }}:8082
+  NEXUS_REGISTRY: ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}
 
 jobs:
   # 🧪 Job 1: Tests
