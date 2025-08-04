@@ -3,117 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A3S It Solutions - Tempo Box - Arquivos</title>
+    <title>Tempo Box - Meus Arquivos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--light-color) 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-custom {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 20px rgba(99, 102, 241, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 50px;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .main-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .files-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .files-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header-custom {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+            padding: 1.5rem 2rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+
+        .card-body-custom {
+            padding: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            color: var(--primary-color);
+            opacity: 0.5;
+        }
+
+        .table-modern {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-modern thead th {
+            background: linear-gradient(135deg, var(--dark-color) 0%, #374151 100%);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .table-modern thead th:first-child {
+            border-top-left-radius: 12px;
+        }
+
+        .table-modern thead th:last-child {
+            border-top-right-radius: 12px;
+        }
+
+        .table-modern tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table-modern tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+            transform: scale(1.01);
+        }
+
+        .table-modern tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            vertical-align: middle;
+        }
+
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .badge-success-custom {
+            background: linear-gradient(45deg, var(--success-color), #059669);
+            color: white;
+        }
+
+        .badge-danger-custom {
+            background: linear-gradient(45deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+
+        .btn-action {
+            padding: 0.5rem 0.75rem;
+            margin: 0 0.25rem;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-info-custom {
+            background: linear-gradient(45deg, var(--accent-color), #0891b2);
+            color: white;
+        }
+
+        .btn-info-custom:hover {
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+            color: white;
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(45deg, var(--success-color), #059669);
+            color: white;
+        }
+
+        .btn-success-custom:hover {
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            color: white;
+        }
+
+        .btn-danger-custom {
+            background: linear-gradient(45deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+
+        .btn-danger-custom:hover {
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            color: white;
+        }
+
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-bottom: none;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 1.5rem 2rem;
+        }
+
+        .modal-title {
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 1.5rem 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding-top: 1rem;
+            }
+            
+            .page-header, .card-body-custom {
+                padding: 1.5rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+            
+            .btn-action {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-archive me-2"></i>A3S It Solutions - Tempo Box
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-archive me-2"></i>Tempo Box
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" th:href="@{/logout}">
-                    <i class="fas fa-sign-out-alt me-1"></i>Sair
+                    <i class="fas fa-sign-out-alt me-2"></i>Sair
                 </a>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <div class="container main-container">
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-list me-2"></i>Meus Arquivos
-                        </h5>
-                        <button class="btn btn-primary btn-sm" onclick="location.reload()">
-                            <i class="fas fa-refresh me-1"></i>Atualizar
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="page-title">
+                            <i class="fas fa-folder-open"></i>Meus Arquivos
+                        </h1>
+                        <button class="btn btn-primary-custom" onclick="location.reload()">
+                            <i class="fas fa-sync-alt me-2"></i>Atualizar Lista
                         </button>
                     </div>
-                    <div class="card-body">
-                        <div th:if="${files.empty}" class="text-center py-4">
-                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Nenhum arquivo encontrado para este token.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card files-card">
+                    <div class="card-header-custom">
+                        <h5 class="card-title">
+                            <i class="fas fa-list me-2"></i>Lista de Arquivos
+                        </h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div th:if="${files.empty}" class="empty-state">
+                            <i class="fas fa-cloud-upload-alt fa-4x mb-4"></i>
+                            <h4 class="mb-3">Nenhum arquivo encontrado</h4>
+                            <p class="mb-0">Nenhum arquivo foi encontrado para este token de acesso.</p>
                         </div>
                         
                         <div th:if="${!files.empty}" class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
+                            <table class="table table-modern">
+                                <thead>
                                     <tr>
-                                        <th>Arquivo</th>
-                                        <th>Tamanho</th>
-                                        <th>Criado em</th>
-                                        <th>Expira em</th>
-                                        <th>Status</th>
-                                        <th>Repositório</th>
-                                        <th>Branch</th>
-                                        <th>Commit</th>
-                                        <th>Ações</th>
+                                        <th><i class="fas fa-file me-2"></i>Arquivo</th>
+                                        <th><i class="fas fa-weight-hanging me-2"></i>Tamanho</th>
+                                        <th><i class="fas fa-plus me-2"></i>Criado</th>
+                                        <th><i class="fas fa-clock me-2"></i>Expira</th>
+                                        <th><i class="fas fa-signal me-2"></i>Status</th>
+                                        <th><i class="fas fa-code-branch me-2"></i>Repo</th>
+                                        <th><i class="fas fa-code-branch me-2"></i>Branch</th>
+                                        <th><i class="fas fa-code-commit me-2"></i>Commit</th>
+                                        <th><i class="fas fa-cogs me-2"></i>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="file : ${files}">
                                         <td>
-                                            <i class="fas fa-file me-2"></i>
-                                            <span th:text="${file.originalFilename}"></span>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-alt me-2 text-primary"></i>
+                                                <span class="fw-medium" th:text="${file.originalFilename}"></span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
-                                            <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
-                                            <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
-                                            <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
+                                            <span class="fw-medium text-muted">
+                                                <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
+                                                <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
+                                                <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
+                                                <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
+                                            </span>
                                         </td>
-                                        <td th:text="${#temporals.format(file.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-                                        <td th:text="${#temporals.format(file.expiresAt, 'dd/MM/yyyy HH:mm')}"></td>
                                         <td>
-                                            <span th:if="${file.expired}" class="badge bg-danger">
+                                            <small class="text-muted" th:text="${#temporals.format(file.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted" th:text="${#temporals.format(file.expiresAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                        </td>
+                                        <td>
+                                            <span th:if="${file.expired}" class="badge badge-custom badge-danger-custom">
                                                 <i class="fas fa-times-circle me-1"></i>Expirado
                                             </span>
-                                            <span th:unless="${file.expired}" class="badge bg-success">
+                                            <span th:unless="${file.expired}" class="badge badge-custom badge-success-custom">
                                                 <i class="fas fa-check-circle me-1"></i>Ativo
                                             </span>
                                         </td>
                                         <td>
                                             <span th:if="${file.description != null and file.description.repository != null}" 
-                                                  th:text="${file.description.repository}"></span>
+                                                  class="small fw-medium" th:text="${file.description.repository}"></span>
                                             <span th:unless="${file.description != null and file.description.repository != null}" 
                                                   class="text-muted">-</span>
                                         </td>
                                         <td>
                                             <span th:if="${file.description != null and file.description.branch != null}" 
-                                                  th:text="${file.description.branch}"></span>
+                                                  class="small fw-medium" th:text="${file.description.branch}"></span>
                                             <span th:unless="${file.description != null and file.description.branch != null}" 
                                                   class="text-muted">-</span>
                                         </td>
                                         <td>
-                                            <span th:if="${file.description != null and file.description.commit != null}" 
-                                                  th:text="${#strings.substring(file.description.commit, 0, T(java.lang.Math).min(8, file.description.commit.length()))}"></span>
+                                            <code th:if="${file.description != null and file.description.commit != null}" 
+                                                  class="small" 
+                                                  th:text="${#strings.substring(file.description.commit, 0, T(java.lang.Math).min(8, file.description.commit.length()))}"></code>
                                             <span th:unless="${file.description != null and file.description.commit != null}" 
                                                   class="text-muted">-</span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-info btn-sm me-1" 
-                                                    data-bs-toggle="modal" 
-                                                    th:data-bs-target="'#detailsModal' + ${file.id}">
-                                                <i class="fas fa-info-circle"></i>
-                                            </button>
-                                            <a th:unless="${file.expired}" 
-                                               th:href="@{'/files/download/' + ${file.fileId} + '?token=' + ${file.accessToken}}" 
-                                               class="btn btn-success btn-sm me-1">
-                                                <i class="fas fa-download"></i>
-                                            </a>
-                                            <form th:unless="${file.expired}" 
-                                                  style="display: inline-block;"
-                                                  th:action="@{'/files/expire/' + ${file.fileId}}" 
-                                                  method="post"
-                                                  onsubmit="return confirm('Tem certeza que deseja expirar este arquivo? Esta ação não pode ser desfeita.');">
-                                                <button type="submit" class="btn btn-danger btn-sm">
-                                                    <i class="fas fa-trash"></i>
+                                            <div class="d-flex">
+                                                <button class="btn btn-action btn-info-custom" 
+                                                        data-bs-toggle="modal" 
+                                                        th:data-bs-target="'#detailsModal' + ${file.id}"
+                                                        title="Ver detalhes">
+                                                    <i class="fas fa-info-circle"></i>
                                                 </button>
-                                            </form>
+                                                <a th:unless="${file.expired}" 
+                                                   th:href="@{'/files/download/' + ${file.fileId} + '?token=' + ${file.accessToken}}" 
+                                                   class="btn btn-action btn-success-custom"
+                                                   title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <form th:unless="${file.expired}" 
+                                                      style="display: inline-block;"
+                                                      th:action="@{'/files/expire/' + ${file.fileId}}" 
+                                                      method="post"
+                                                      onsubmit="return confirm('Tem certeza que deseja expirar este arquivo? Esta ação não pode ser desfeita.');">
+                                                    <button type="submit" class="btn btn-action btn-danger-custom" title="Expirar arquivo">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -138,72 +450,108 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h6><i class="fas fa-file me-2"></i>Informações do Arquivo</h6>
-                            <table class="table table-sm">
-                                <tr>
-                                    <td><strong>Nome:</strong></td>
-                                    <td th:text="${file.originalFilename}"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tamanho:</strong></td>
-                                    <td>
-                                        <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
-                                        <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
-                                        <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
-                                        <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tipo:</strong></td>
-                                    <td th:text="${file.contentType}"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>ID:</strong></td>
-                                    <td><code th:text="${file.fileId}"></code></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Token de Acesso:</strong></td>
-                                    <td><code th:text="${file.accessToken}"></code></td>
-                                </tr>
-                            </table>
+                            <h6 class="text-primary fw-bold mb-3">
+                                <i class="fas fa-file me-2"></i>Informações do Arquivo
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td class="fw-medium text-muted" style="width: 40%;">Nome:</td>
+                                        <td class="fw-medium" th:text="${file.originalFilename}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Tamanho:</td>
+                                        <td class="fw-medium text-success">
+                                            <span th:if="${file.fileSize < 1024}" th:text="${file.fileSize} + ' B'"></span>
+                                            <span th:if="${file.fileSize >= 1024 and file.fileSize < 1048576}" th:text="${#numbers.formatDecimal(file.fileSize / 1024, 1, 1)} + ' KB'"></span>
+                                            <span th:if="${file.fileSize >= 1048576 and file.fileSize < 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024, 1, 2)} + ' MB'"></span>
+                                            <span th:if="${file.fileSize >= 1073741824}" th:text="${#numbers.formatDecimal(file.fileSize / 1024 / 1024 / 1024, 1, 2)} + ' GB'"></span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Tipo:</td>
+                                        <td><code class="text-info" th:text="${file.contentType}"></code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Criado em:</td>
+                                        <td class="fw-medium" th:text="${#temporals.format(file.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Expira em:</td>
+                                        <td class="fw-medium" th:classappend="${file.expired} ? 'text-danger' : 'text-warning'" 
+                                            th:text="${#temporals.format(file.expiresAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Status:</td>
+                                        <td>
+                                            <span th:if="${file.expired}" class="badge badge-custom badge-danger-custom">
+                                                <i class="fas fa-times-circle me-1"></i>Expirado
+                                            </span>
+                                            <span th:unless="${file.expired}" class="badge badge-custom badge-success-custom">
+                                                <i class="fas fa-check-circle me-1"></i>Ativo
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">ID do Arquivo:</td>
+                                        <td><code class="text-primary small" th:text="${file.fileId}"></code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium text-muted">Token de Acesso:</td>
+                                        <td><code class="text-warning small" th:text="${file.accessToken}"></code></td>
+                                    </tr>
+                                </table>
+                            </div>
                         </div>
                         <div class="col-md-6" th:if="${file.description != null}">
-                            <h6><i class="fas fa-code-branch me-2"></i>Informações do Git</h6>
-                            <table class="table table-sm">
-                                <tr th:if="${file.description.repository != null}">
-                                    <td><strong>Repositório:</strong></td>
-                                    <td th:text="${file.description.repository}"></td>
-                                </tr>
-                                <tr th:if="${file.description.branch != null}">
-                                    <td><strong>Branch:</strong></td>
-                                    <td th:text="${file.description.branch}"></td>
-                                </tr>
-                                <tr th:if="${file.description.commit != null}">
-                                    <td><strong>Commit:</strong></td>
-                                    <td><code th:text="${file.description.commit}"></code></td>
-                                </tr>
-                                <tr th:if="${file.description.commitMessage != null}">
-                                    <td><strong>Mensagem:</strong></td>
-                                    <td th:text="${file.description.commitMessage}"></td>
-                                </tr>
-                                <tr th:if="${file.description.actor != null}">
-                                    <td><strong>Autor:</strong></td>
-                                    <td th:text="${file.description.actor}"></td>
-                                </tr>
-                                <tr th:if="${file.description.runId != null}">
-                                    <td><strong>Run ID:</strong></td>
-                                    <td th:text="${file.description.runId}"></td>
-                                </tr>
-                            </table>
+                            <h6 class="text-primary fw-bold mb-3">
+                                <i class="fas fa-code-branch me-2"></i>Informações do Git
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-borderless">
+                                    <tr th:if="${file.description.repository != null}">
+                                        <td class="fw-medium text-muted" style="width: 40%;">Repositório:</td>
+                                        <td class="fw-medium" th:text="${file.description.repository}"></td>
+                                    </tr>
+                                    <tr th:if="${file.description.branch != null}">
+                                        <td class="fw-medium text-muted">Branch:</td>
+                                        <td><code class="text-success" th:text="${file.description.branch}"></code></td>
+                                    </tr>
+                                    <tr th:if="${file.description.commit != null}">
+                                        <td class="fw-medium text-muted">Commit:</td>
+                                        <td><code class="text-info" th:text="${file.description.commit}"></code></td>
+                                    </tr>
+                                    <tr th:if="${file.description.commitMessage != null}">
+                                        <td class="fw-medium text-muted">Mensagem:</td>
+                                        <td class="fw-medium" th:text="${file.description.commitMessage}"></td>
+                                    </tr>
+                                    <tr th:if="${file.description.actor != null}">
+                                        <td class="fw-medium text-muted">Autor:</td>
+                                        <td class="fw-medium" th:text="${file.description.actor}"></td>
+                                    </tr>
+                                    <tr th:if="${file.description.runId != null}">
+                                        <td class="fw-medium text-muted">Run ID:</td>
+                                        <td><code class="text-warning" th:text="${file.description.runId}"></code></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6" th:unless="${file.description != null}">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-code-branch fa-3x mb-3 opacity-25"></i>
+                                <p class="mb-0">Nenhuma informação de Git disponível</p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Fechar
+                    </button>
                     <a th:unless="${file.expired}" 
                        th:href="@{'/files/download/' + ${file.fileId} + '?token=' + ${file.accessToken}}" 
-                       class="btn btn-success">
-                        <i class="fas fa-download me-1"></i>Download
+                       class="btn btn-success-custom">
+                        <i class="fas fa-download me-2"></i>Fazer Download
                     </a>
                 </div>
             </div>
@@ -211,5 +559,54 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add loading states to buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const refreshBtn = document.querySelector('[onclick="location.reload()"]');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Atualizando...';
+                    this.disabled = true;
+                });
+            }
+
+            // Add confirmation animation to expire buttons
+            const expireForms = document.querySelectorAll('form[onsubmit*="confirm"]');
+            expireForms.forEach(form => {
+                const button = form.querySelector('button');
+                form.addEventListener('submit', function(e) {
+                    if (confirm('Tem certeza que deseja expirar este arquivo? Esta ação não pode ser desfeita.')) {
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        button.disabled = true;
+                    } else {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            // Animate table rows on hover
+            const tableRows = document.querySelectorAll('.table-modern tbody tr');
+            tableRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.01)';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        });
+
+        // Auto-refresh every 5 minutes
+        setInterval(function() {
+            const now = new Date();
+            const lastRefresh = localStorage.getItem('lastRefresh');
+            if (!lastRefresh || (now - new Date(lastRefresh)) > 300000) { // 5 minutes
+                location.reload();
+            }
+        }, 300000);
+
+        // Store last refresh time
+        localStorage.setItem('lastRefresh', new Date().toISOString());
+    </script>
 </body>
 </html>
