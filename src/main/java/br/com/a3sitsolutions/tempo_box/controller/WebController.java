@@ -125,6 +125,16 @@ public class WebController {
         return "redirect:/files";
     }
 
+    @GetMapping("/auth/{authToken}")
+    public String autoAuthenticate(@PathVariable String authToken, HttpSession session) {
+        if (staticAuthToken.equals(authToken)) {
+            session.setAttribute("authToken", authToken);
+            return "redirect:/files";
+        } else {
+            return "redirect:/login?error";
+        }
+    }
+
     @GetMapping("/")
     public String home() {
         return "redirect:/login";
