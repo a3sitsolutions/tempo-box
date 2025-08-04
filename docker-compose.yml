@@ -20,7 +20,7 @@ services:
       retries: 3
 
   tempo-box-app:
-    image: a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+    image: a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
     container_name: tempo-box-app
     depends_on:
       tempo-box-postgres:

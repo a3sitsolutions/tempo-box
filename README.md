@@ -88,10 +88,10 @@ A aplicação está disponível como imagem Docker no repositório Nexus:
 
 ```bash
 # Login no repositório Nexus
-docker login a3s.nexus.maranguape.a3sitsolutions.com.br:8082
+docker login a3s.nexus.maranguape.a3sitsolutions.com.br
 
 # Pull da imagem
-docker pull a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+docker pull a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
 ```
 
 ### Deploy com Docker Compose (Recomendado)
@@ -136,7 +136,7 @@ docker run -d \
   -e SPRING_DATASOURCE_PASSWORD=admin \
   -e APP_AUTH_STATIC_TOKEN=tempo-box-admin-token-2024 \
   -v $(pwd)/uploads:/app/uploads \
-  a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+  a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
 ```
 
 ### Deploy com PostgreSQL Externo
@@ -151,7 +151,7 @@ docker run -d \
   -e SPRING_DATASOURCE_PASSWORD=admin \
   -e APP_AUTH_STATIC_TOKEN=tempo-box-admin-token-2024 \
   -v $(pwd)/uploads:/app/uploads \
-  a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+  a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
 ```
 
 ## 🔗 API Endpoints
@@ -243,8 +243,8 @@ O projeto inclui pipeline automatizada para build e deploy:
 
 **Imagens Geradas:**
 ```
-a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
-a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:<commit-sha>
+a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
+a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:<commit-sha>
 ```
 
 ### Secrets Configurados

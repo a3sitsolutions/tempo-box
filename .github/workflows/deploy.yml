@@ -45,22 +45,22 @@ jobs:
 
     - name: Login to Nexus Docker Registry
       run: |
-        echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ secrets.NEXUS_REPOSITORY }}:8082 -u "${{ secrets.NEXUS_USER }}" --password-stdin
+        echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }} -u "${{ secrets.NEXUS_USER }}" --password-stdin
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
-        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:latest .
+        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest .
 
     - name: Push Docker image to Nexus
       run: |
-        docker push ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-        docker push ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        docker push ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest
 
     - name: Cleanup Docker images
       run: |
-        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
-        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:8082/${{ env.IMAGE_NAME }}:latest || true
+        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest || true
 
     - name: Clean up Gradle cache
       run: |
