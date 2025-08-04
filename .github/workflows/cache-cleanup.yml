@@ -1,0 +1,71 @@
+name: 🧹 Limpeza de Cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      cleanup_type:
+        description: '🗂️ Tipo de limpeza de cache'
+        required: true
+        default: 'gradle'
+        type: choice
+        options:
+        - gradle
+        - docker
+        - all
+  schedule:
+    # Limpeza automática toda segunda às 02:00
+    - cron: '0 2 * * 1'
+
+env:
+  GRADLE_CACHE_DIR: /home/apolo/.gradle-cache/${{ github.repository }}
+  DOCKER_CACHE_DIR: /home/apolo/.docker-cache/${{ github.repository }}
+
+jobs:
+  cache-cleanup:
+    name: 🧹 Limpeza de Cache
+    runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    
+    steps:
+    - name: 📊 Tamanho do cache antes da limpeza
+      run: |
+        echo "📊 Tamanhos dos caches antes da limpeza:"
+        echo "Gradle: $(du -sh ${{ env.GRADLE_CACHE_DIR }} 2>/dev/null || echo 'não encontrado')"
+        echo "Docker: $(du -sh ${{ env.DOCKER_CACHE_DIR }} 2>/dev/null || echo 'não encontrado')"
+        echo "Uso total do disco: $(df -h /home/apolo | tail -1)"
+
+    - name: 🧹 Limpeza do cache do Gradle
+      if: ${{ inputs.cleanup_type == 'gradle' || inputs.cleanup_type == 'all' || github.event_name == 'schedule' }}
+      run: |
+        echo "🧹 Limpando cache do Gradle..."
+        if [ -d "${{ env.GRADLE_CACHE_DIR }}" ]; then
+          # Manter apenas os últimos 7 dias de cache
+          find ${{ env.GRADLE_CACHE_DIR }} -type f -mtime +7 -delete || true
+          find ${{ env.GRADLE_CACHE_DIR }} -type d -empty -delete || true
+          echo "✅ Cache do Gradle limpo"
+        else
+          echo "ℹ️ Diretório do cache do Gradle não encontrado"
+        fi
+
+    - name: 🧹 Limpeza do cache do Docker
+      if: ${{ inputs.cleanup_type == 'docker' || inputs.cleanup_type == 'all' || github.event_name == 'schedule' }}
+      run: |
+        echo "🧹 Limpando cache do Docker..."
+        if [ -d "${{ env.DOCKER_CACHE_DIR }}" ]; then
+          # Manter apenas os últimos 3 dias de cache Docker
+          find ${{ env.DOCKER_CACHE_DIR }} -type f -mtime +3 -delete || true
+          find ${{ env.DOCKER_CACHE_DIR }} -type d -empty -delete || true
+          echo "✅ Cache do Docker limpo"
+        else
+          echo "ℹ️ Diretório do cache do Docker não encontrado"
+        fi
+        
+        # Limpeza adicional do sistema Docker
+        docker system prune -f --filter "until=72h" || true
+
+    - name: 📊 Tamanho do cache após limpeza
+      run: |
+        echo "📊 Tamanhos dos caches após limpeza:"
+        echo "Gradle: $(du -sh ${{ env.GRADLE_CACHE_DIR }} 2>/dev/null || echo 'não encontrado')"
+        echo "Docker: $(du -sh ${{ env.DOCKER_CACHE_DIR }} 2>/dev/null || echo 'não encontrado')"
+        echo "Uso total do disco: $(df -h /home/apolo | tail -1)"
+        echo "✅ Limpeza de cache concluída!"

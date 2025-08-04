@@ -1,4 +1,4 @@
-name: 🚀 Build and Deploy to Nexus
+name: 🚀 Build e Deploy para Nexus
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_only:
-        description: '🚀 Deploy only (skip tests and build)'
+        description: '🚀 Apenas deploy (pular testes e build)'
         required: false
         default: false
         type: boolean
@@ -17,41 +17,52 @@ env:
   IMAGE_NAME: tempo-box
   IMAGE_TAG: ${{ github.sha }}
   NEXUS_REGISTRY: ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}
+  # Cache paths para self-hosted runner
+  GRADLE_USER_HOME: /home/apolo/.gradle
+  GRADLE_CACHE_DIR: /home/apolo/.gradle-cache/${{ github.repository }}
+  DOCKER_CACHE_DIR: /home/apolo/.docker-cache/${{ github.repository }}
 
 jobs:
-  # 🧪 Job 1: Tests
+  # 🧪 Job 1: Testes
   test:
-    name: 🧪 Run Tests
+    name: 🧪 Executar Testes
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
     if: ${{ !inputs.deploy_only }}
     
     steps:
-    - name: 📥 Checkout code
+    - name: 📥 Checkout do código
       uses: actions/checkout@v4
 
-    - name: ☕ Set up JDK 17
+    - name: ☕ Configurar JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: 📦 Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: 📦 Configurar diretórios de cache do Gradle
+      run: |
+        echo "🔧 Configurando cache persistente do Gradle..."
+        mkdir -p ${{ env.GRADLE_CACHE_DIR }}/caches
+        mkdir -p ${{ env.GRADLE_CACHE_DIR }}/wrapper
+        mkdir -p ${{ env.GRADLE_USER_HOME }}
+        
+        # Criar symlinks para cache persistente se não existirem
+        if [ ! -L "${{ env.GRADLE_USER_HOME }}/caches" ]; then
+          ln -sf ${{ env.GRADLE_CACHE_DIR }}/caches ${{ env.GRADLE_USER_HOME }}/caches
+        fi
+        if [ ! -L "${{ env.GRADLE_USER_HOME }}/wrapper" ]; then
+          ln -sf ${{ env.GRADLE_CACHE_DIR }}/wrapper ${{ env.GRADLE_USER_HOME }}/wrapper
+        fi
+        
+        echo "✅ Cache do Gradle pronto em ${{ env.GRADLE_CACHE_DIR }}"
 
-    - name: 🔧 Make gradlew executable
+    - name: 🔧 Tornar gradlew executável
       run: chmod +x ./gradlew
 
-    - name: 🧪 Run tests
+    - name: 🧪 Executar testes
       run: ./gradlew test --parallel --build-cache
 
-    - name: 📊 Upload test results
+    - name: 📊 Upload dos resultados dos testes
       uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -59,131 +70,147 @@ jobs:
         path: build/reports/tests/test/
         retention-days: 7
 
-  # 🏗️ Job 2: Build Application
+  # 🏗️ Job 2: Build da Aplicação
   build:
-    name: 🏗️ Build Application
+    name: 🏗️ Build da Aplicação
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
     needs: [test]
     if: always() && (needs.test.result == 'success' || inputs.deploy_only)
     
     steps:
-    - name: 📥 Checkout code
+    - name: 📥 Checkout do código
       uses: actions/checkout@v4
 
-    - name: ☕ Set up JDK 17
+    - name: ☕ Configurar JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: 📦 Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+    - name: 📦 Configurar diretórios de cache do Gradle
+      run: |
+        echo "🔧 Usando cache persistente do Gradle..."
+        mkdir -p ${{ env.GRADLE_CACHE_DIR }}/caches
+        mkdir -p ${{ env.GRADLE_CACHE_DIR }}/wrapper
+        mkdir -p ${{ env.GRADLE_USER_HOME }}
+        
+        # Usar cache existente via symlinks
+        if [ ! -L "${{ env.GRADLE_USER_HOME }}/caches" ]; then
+          ln -sf ${{ env.GRADLE_CACHE_DIR }}/caches ${{ env.GRADLE_USER_HOME }}/caches
+        fi
+        if [ ! -L "${{ env.GRADLE_USER_HOME }}/wrapper" ]; then
+          ln -sf ${{ env.GRADLE_CACHE_DIR }}/wrapper ${{ env.GRADLE_USER_HOME }}/wrapper
+        fi
+        
+        echo "✅ Cache do Gradle vinculado, tamanho: $(du -sh ${{ env.GRADLE_CACHE_DIR }} 2>/dev/null || echo 'vazio')"
 
-    - name: 🔧 Make gradlew executable
+    - name: 🔧 Tornar gradlew executável
       run: chmod +x ./gradlew
 
-    - name: 🏗️ Build application
+    - name: 🏗️ Build da aplicação
       run: ./gradlew build -x test --parallel --build-cache
 
-    - name: 📦 Upload build artifacts
+    - name: 📦 Upload dos artefatos do build
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: build/libs/
         retention-days: 7
 
-  # 🐳 Job 3: Docker Build & Push
+  # 🐳 Job 3: Build e Push do Docker
   docker:
-    name: 🐳 Docker Build & Push
+    name: 🐳 Build e Push do Docker
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
     needs: [build]
     if: always() && needs.build.result == 'success'
     
     steps:
-    - name: 📥 Checkout code
+    - name: 📥 Checkout do código
       uses: actions/checkout@v4
 
-    - name: 📦 Download build artifacts
+    - name: 📦 Download dos artefatos do build
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
         path: build/libs/
 
-    - name: 🐳 Set up Docker Buildx
+    - name: 🐳 Configurar Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: 🔐 Login to Nexus Docker Registry
+    - name: 🔐 Login no Nexus Docker Registry
       run: |
-        echo "🔐 Logging into Nexus Registry..."
+        echo "🔐 Fazendo login no Nexus Registry..."
         echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ env.NEXUS_REGISTRY }} -u "${{ secrets.NEXUS_USER }}" --password-stdin
 
-    - name: 🏗️ Build Docker image
+    - name: 📦 Configurar cache do Docker
       run: |
-        echo "🏗️ Building Docker images..."
+        echo "🔧 Configurando cache persistente do Docker..."
+        mkdir -p ${{ env.DOCKER_CACHE_DIR }}
+        echo "✅ Cache do Docker pronto em ${{ env.DOCKER_CACHE_DIR }}"
+
+    - name: 🏗️ Build da imagem Docker
+      run: |
+        echo "🏗️ Fazendo build das imagens Docker com cache persistente..."
         docker buildx build \
-          --cache-from=type=local,src=/tmp/.buildx-cache \
-          --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+          --cache-from=type=local,src=${{ env.DOCKER_CACHE_DIR }} \
+          --cache-to=type=local,dest=${{ env.DOCKER_CACHE_DIR }},mode=max \
           --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
           --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
           --load \
           .
+        
+        echo "📊 Tamanho do cache: $(du -sh ${{ env.DOCKER_CACHE_DIR }} 2>/dev/null || echo 'vazio')"
 
-    - name: 🚀 Push Docker images to Nexus
+    - name: 🚀 Push das imagens Docker para o Nexus
       run: |
-        echo "🚀 Pushing images to Nexus..."
+        echo "🚀 Enviando imagens para o Nexus..."
         docker push ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
         docker push ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        echo "✅ Images pushed successfully!"
+        echo "✅ Imagens enviadas com sucesso!"
 
-    - name: 🗂️ Move cache
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
-
-  # 🧹 Job 4: Cleanup
+  # 🧹 Job 4: Limpeza
   cleanup:
-    name: 🧹 Cleanup
+    name: 🧹 Limpeza
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
     needs: [docker]
     if: always()
     
     steps:
-    - name: 🧹 Cleanup Docker images
+    - name: 🧹 Limpeza das imagens Docker locais
       run: |
-        echo "🧹 Cleaning up local Docker images..."
+        echo "🧹 Limpando imagens Docker locais..."
         docker rmi ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
         docker rmi ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
-        docker system prune -f || true
-        echo "✅ Cleanup completed!"
+        
+        # Limpar apenas imagens dangling, manter cache
+        docker image prune -f || true
+        
+        echo "📊 Tamanhos dos caches após limpeza:"
+        echo "Gradle: $(du -sh ${{ env.GRADLE_CACHE_DIR }} 2>/dev/null || echo 'vazio')"
+        echo "Docker: $(du -sh ${{ env.DOCKER_CACHE_DIR }} 2>/dev/null || echo 'vazio')"
+        echo "✅ Limpeza concluída!"
 
-  # 📊 Job 5: Summary
+  # 📊 Job 5: Resumo
   summary:
-    name: 📊 Pipeline Summary
+    name: 📊 Resumo da Pipeline
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
     needs: [test, build, docker, cleanup]
     if: always()
     
     steps:
-    - name: 📊 Pipeline Summary
+    - name: 📊 Resumo da Pipeline
       run: |
-        echo "🎉 Pipeline Execution Summary"
+        echo "🎉 Resumo da Execução da Pipeline"
         echo "================================"
-        echo "🧪 Tests: ${{ needs.test.result || 'skipped' }}"
-        echo "🏗️  Build: ${{ needs.build.result || 'skipped' }}"
-        echo "🐳 Docker: ${{ needs.docker.result || 'skipped' }}"
-        echo "🧹 Cleanup: ${{ needs.cleanup.result || 'skipped' }}"
+        echo "🧪 Testes: ${{ needs.test.result || 'pulado' }}"
+        echo "🏗️  Build: ${{ needs.build.result || 'pulado' }}"
+        echo "🐳 Docker: ${{ needs.docker.result || 'pulado' }}"
+        echo "🧹 Limpeza: ${{ needs.cleanup.result || 'pulado' }}"
         echo "================================"
         if [[ "${{ needs.docker.result }}" == "success" ]]; then
-          echo "✅ Deploy successful! Images available at:"
+          echo "✅ Deploy realizado com sucesso! Imagens disponíveis em:"
           echo "📦 ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "📦 ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
         else
-          echo "❌ Deploy failed or skipped"
+          echo "❌ Deploy falhou ou foi pulado"
         fi
