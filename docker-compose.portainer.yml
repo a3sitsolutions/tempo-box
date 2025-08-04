@@ -59,7 +59,7 @@ services:
       - CLEANUP_INTERVAL=${CLEANUP_INTERVAL:-3600000}
       - TZ=America/Sao_Paulo
       # JVM Settings para produção
-      - JAVA_OPTS=-Xmx1024m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport
+      - JAVA_OPTS=-Xmx1536m -Xms768m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxGCPauseMillis=200 -XX:+ExitOnOutOfMemoryError
     
     deploy:
       mode: replicated
@@ -70,10 +70,15 @@ services:
       resources:
         limits:
           cpus: "2.0"
-          memory: 1536M
+          memory: 2048M
         reservations:
           cpus: "1.0"
-          memory: 768M
+          memory: 1024M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
       labels:
         # Traefik Labels
         - traefik.enable=true
@@ -86,7 +91,7 @@ services:
         - traefik.http.services.tempo-box.loadbalancer.passHostHeader=true
         
         # Health Check (Traefik fará via HTTP interno)
-        - traefik.http.services.tempo-box.loadbalancer.healthcheck.path=/auth/tempo-box-admin-token-2024
+        - traefik.http.services.tempo-box.loadbalancer.healthcheck.path=/health
         - traefik.http.services.tempo-box.loadbalancer.healthcheck.interval=30s
         - traefik.http.services.tempo-box.loadbalancer.healthcheck.timeout=10s
         
@@ -98,11 +103,11 @@ services:
         - traefik.http.middlewares.tempo-box-headers.headers.referrerPolicy=strict-origin-when-cross-origin
     
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/auth/tempo-box-admin-token-2024 || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     
     depends_on:
       - tempo_box_postgres

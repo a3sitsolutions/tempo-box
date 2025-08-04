@@ -369,7 +369,9 @@ docker-compose logs -f
 ```
 
 ### Health Check
-- **URL:** `http://localhost:8080/actuator/health` (se Actuator estiver habilitado)
+- **Simples:** `http://localhost:8080/health` - Health check rápido e confiável
+- **Detalhado:** `http://localhost:8080/health/detailed` - Com informações adicionais
+- **Actuator:** `http://localhost:8080/actuator/health` - Health check do Spring Boot
 
 ## 📝 Estrutura do Projeto
 
@@ -479,8 +481,8 @@ Após o deploy bem-sucedido:
 
 ### **Health Checks:**
 - ✅ **PostgreSQL**: `pg_isready` interno
-- ✅ **Aplicação**: Endpoint `/auth/` via curl
-- ✅ **Traefik**: Health check automático
+- ✅ **Aplicação**: Endpoint `/health` via wget (mais rápido e confiável)
+- ✅ **Traefik**: Health check automático no endpoint `/health`
 
 ### **Serviços incluídos:**
 - 🗄️ **tempo_box_postgres**: Banco de dados
@@ -514,6 +516,8 @@ Após o deploy bem-sucedido:
 - ✅ Referrer Policy
 
 ## 🚨 Troubleshooting
+
+> 📖 **[Guia Completo de Troubleshooting](TROUBLESHOOTING.md)** - Soluções detalhadas para problemas comuns
 
 ### **Se a aplicação não subir:**
 ```bash
