@@ -1,0 +1,251 @@
+version: "3.7"
+services:
+
+## --------------------------- BANCO DE DADOS --------------------------- ##
+
+  tempo_box_postgres:
+    image: postgres:15-alpine
+    networks:
+      - a3snet ## Nome da rede interna
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    environment:
+      - POSTGRES_DB=tempo_box
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - TZ=America/Sao_Paulo
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d tempo_box"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+## --------------------------- APLICAÇÃO TEMPO BOX --------------------------- ##
+
+  tempo_box_app:
+    image: a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
+    networks:
+      - a3snet ## Nome da rede interna
+    
+    volumes:
+      - uploads_data:/app/uploads
+    
+    environment:
+      # Profile Docker (já configurado na imagem)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://tempo_box_postgres:5432/tempo_box
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - APP_FILE_UPLOAD_DIR=/app/uploads
+      - APP_AUTH_STATIC_TOKEN=tempo-box-admin-token-2024
+      - APP_CLEANUP_INTERVAL=3600000
+      - TZ=America/Sao_Paulo
+      # JVM Settings para produção
+      - JAVA_OPTS=-Xmx1024m -Xms512m -XX:+UseG1GC -XX:+UseContainerSupport
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1536M
+        reservations:
+          cpus: "1.0"
+          memory: 768M
+      labels:
+        # Traefik Labels
+        - traefik.enable=true
+        - traefik.http.routers.tempo-box.rule=Host(`tempo-box.a3sitsolutions.com.br`)
+        - traefik.http.routers.tempo-box.entrypoints=websecure
+        - traefik.http.routers.tempo-box.priority=1
+        - traefik.http.routers.tempo-box.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.tempo-box.service=tempo-box
+        - traefik.http.services.tempo-box.loadbalancer.server.port=8080
+        - traefik.http.services.tempo-box.loadbalancer.passHostHeader=true
+        
+        # Health Check (Traefik fará via HTTP interno)
+        - traefik.http.services.tempo-box.loadbalancer.healthcheck.path=/auth/tempo-box-admin-token-2024
+        - traefik.http.services.tempo-box.loadbalancer.healthcheck.interval=30s
+        - traefik.http.services.tempo-box.loadbalancer.healthcheck.timeout=10s
+        
+        # Security Headers
+        - traefik.http.routers.tempo-box.middlewares=tempo-box-headers
+        - traefik.http.middlewares.tempo-box-headers.headers.frameDeny=true
+        - traefik.http.middlewares.tempo-box-headers.headers.contentTypeNosniff=true
+        - traefik.http.middlewares.tempo-box-headers.headers.browserXssFilter=true
+        - traefik.http.middlewares.tempo-box-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+    
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/auth/tempo-box-admin-token-2024 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    
+    depends_on:
+      - tempo_box_postgres
+
+## --------------------------- BACKUP SERVICE --------------------------- ##
+
+  tempo_box_backup:
+    image: postgres:15-alpine
+    networks:
+      - a3snet
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:ro
+      - uploads_data:/app/uploads:ro
+      - backup_storage:/backups
+    
+    environment:
+      - POSTGRES_DB=tempo_box
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - PGPASSWORD=admin
+      - TZ=America/Sao_Paulo
+    
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache tar gzip curl
+        while true; do
+          echo '🗄️ Iniciando backup do Tempo Box...'
+          
+          # Backup do banco de dados
+          pg_dump -h tempo_box_postgres -U admin -d tempo_box > /backups/tempo_box_db_$$(date +%Y%m%d_%H%M%S).sql
+          
+          # Backup dos uploads
+          tar -czf /backups/tempo_box_uploads_$$(date +%Y%m%d_%H%M%S).tar.gz -C /app uploads
+          
+          echo '✅ Backup concluído!'
+          
+          # Limpar backups antigos (manter últimos 7 dias)
+          find /backups -name 'tempo_box_*.sql' -mtime +7 -delete
+          find /backups -name 'tempo_box_*.tar.gz' -mtime +7 -delete
+          
+          echo '🧹 Backups antigos removidos. Próximo backup em 24 horas.'
+          sleep 86400
+        done
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    
+    depends_on:
+      - tempo_box_postgres
+
+## --------------------------- MONITORING --------------------------- ##
+
+  tempo_box_monitor:
+    image: alpine:latest
+    networks:
+      - a3snet
+    
+    volumes:
+      - uploads_data:/app/uploads:ro
+      - backup_storage:/backups:ro
+    
+    environment:
+      - TZ=America/Sao_Paulo
+    
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache curl jq
+        while true; do
+          echo '📊 === Tempo Box Status Report ==='
+          echo "⏰ Data/Hora: $$(date)"
+          echo
+          
+          # Verificar saúde da aplicação via Traefik
+          if curl -s -f https://tempo-box.a3sitsolutions.com.br/auth/tempo-box-admin-token-2024 > /dev/null; then
+            echo '✅ Aplicação: Online'
+          else
+            echo '❌ Aplicação: Offline'
+          fi
+          
+          # Estatísticas de arquivos
+          echo "📁 Uploads: $$(find /app/uploads -type f | wc -l) arquivos"
+          echo "💾 Espaço uploads: $$(du -sh /app/uploads 2>/dev/null || echo N/A)"
+          echo "🗄️ Backups: $$(find /backups -name 'tempo_box_*' | wc -l) arquivos"
+          echo "💾 Espaço backups: $$(du -sh /backups 2>/dev/null || echo N/A)"
+          
+          echo '================================='
+          echo
+          sleep 300
+        done
+    
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 64M
+
+## --------------------------- VOLUMES --------------------------- ##
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/tempo-box/postgres
+  
+  uploads_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/tempo-box/uploads
+  
+  backup_storage:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/tempo-box/backups
+
+## --------------------------- NETWORKS --------------------------- ##
+
+networks:
+  a3snet: ## Nome da rede interna
+    external: true
+    name: a3snet ## Nome da rede interna

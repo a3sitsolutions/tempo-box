@@ -1,5 +1,8 @@
 FROM openjdk:17-jdk-slim
 
+# Instalar wget para health checks
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 # Criar diretório da aplicação
 WORKDIR /app
 

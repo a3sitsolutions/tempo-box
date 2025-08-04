@@ -343,6 +343,161 @@ tempo-box/
 └── README.md                 # Documentação
 ```
 
+# 🚀 Deploy Tempo Box no Portainer com Traefik
+
+## 📋 Pré-requisitos
+
+### 1. Criar diretórios no host:
+```bash
+sudo mkdir -p /opt/docker-data/tempo-box/{postgres,uploads,backups}
+sudo chown -R 1000:1000 /opt/docker-data/tempo-box/
+sudo chmod -R 755 /opt/docker-data/tempo-box/
+```
+
+### 2. Configurar rede Traefik:
+```bash
+# Se não existir, criar a rede a3snet
+docker network create --driver overlay --attachable a3snet
+```
+
+### 3. Login no Nexus Registry (no manager node):
+```bash
+docker login a3s.nexus.maranguape.a3sitsolutions.com.br
+```
+
+## 🎯 Deploy no Portainer
+
+### 1. **Acessar Portainer**
+- URL: `https://portainer.a3sitsolutions.com.br`
+- Login com suas credenciais
+
+### 2. **Criar Nova Stack**
+- Ir em **Stacks** → **Add stack**
+- **Name**: `tempo-box`
+- **Build method**: Web editor
+
+### 3. **Colar o docker-compose.portainer.yml**
+- Copiar todo o conteúdo do arquivo `docker-compose.portainer.yml`
+- Colar no editor do Portainer
+
+### 4. **Configurar Environment Variables (opcional)**
+Se quiser personalizar, adicione:
+```env
+POSTGRES_PASSWORD=SuaSenhaSegura
+APP_AUTH_STATIC_TOKEN=seu-token-personalizado
+JAVA_OPTS=-Xmx2048m -Xms1024m
+```
+
+### 5. **Deploy da Stack**
+- Clicar em **Deploy the stack**
+- Aguardar todos os serviços ficarem running
+
+## 🌐 URLs de Acesso
+
+Após o deploy bem-sucedido:
+
+### **Aplicação Principal:**
+- 🚀 **Tempo Box**: https://tempo-box.a3sitsolutions.com.br
+- 🔐 **Login direto**: https://tempo-box.a3sitsolutions.com.br/auth/tempo-box-admin-token-2024
+
+### **Funcionalidades:**
+- 📁 **Upload de arquivos**: Interface web completa
+- 🔗 **API REST**: Para integração e automação
+- ⏰ **Auto-expiração**: Limpeza automática de arquivos
+- 🗂️ **Gestão manual**: Expirar arquivos via interface
+
+## 📊 Monitoramento
+
+### **Logs no Portainer:**
+1. Ir em **Stacks** → **tempo-box**
+2. Clicar no serviço desejado
+3. Aba **Logs** para ver saídas
+
+### **Health Checks:**
+- ✅ **PostgreSQL**: `pg_isready` interno
+- ✅ **Aplicação**: Endpoint `/auth/` via curl
+- ✅ **Traefik**: Health check automático
+
+### **Serviços incluídos:**
+- 🗄️ **tempo_box_postgres**: Banco de dados
+- 🚀 **tempo_box_app**: Aplicação principal
+- 💾 **tempo_box_backup**: Backup automático diário
+- 📊 **tempo_box_monitor**: Monitoramento a cada 5min
+
+## 🔧 Configurações Especiais
+
+### **Recursos alocados:**
+- **PostgreSQL**: 1 CPU, 512MB RAM
+- **Aplicação**: 2 CPU, 1.5GB RAM
+- **Backup**: 0.5 CPU, 256MB RAM
+- **Monitor**: 0.1 CPU, 64MB RAM
+
+### **Volumes persistentes:**
+- **Database**: `/opt/docker-data/tempo-box/postgres`
+- **Uploads**: `/opt/docker-data/tempo-box/uploads`
+- **Backups**: `/opt/docker-data/tempo-box/backups`
+
+### **Backup automático:**
+- ⏰ **Frequência**: Diário (24h)
+- 📦 **Inclui**: Banco de dados + arquivos
+- 🧹 **Retenção**: 7 dias
+- 📍 **Local**: `/opt/docker-data/tempo-box/backups`
+
+### **Security Headers (Traefik):**
+- ✅ Frame Deny
+- ✅ Content Type NoSniff
+- ✅ XSS Filter
+- ✅ Referrer Policy
+
+## 🚨 Troubleshooting
+
+### **Se a aplicação não subir:**
+```bash
+# Verificar logs
+docker service logs tempo-box_tempo_box_app
+
+# Verificar se o Nexus está acessível
+docker pull a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+```
+
+### **Se o banco não conectar:**
+```bash
+# Verificar PostgreSQL
+docker service logs tempo-box_tempo_box_postgres
+
+# Testar conexão manual
+docker exec -it <container_id> psql -U admin -d tempo_box
+```
+
+### **Se o Traefik não rotear:**
+- Verificar se o domínio `tempo-box.a3sitsolutions.com.br` aponta para o servidor
+- Confirmar se a rede `a3snet` existe e está configurada
+- Verificar logs do Traefik para certificado SSL
+
+## ✅ Checklist pós-deploy
+
+- [ ] Aplicação acessível via HTTPS
+- [ ] Login funciona com token
+- [ ] Upload de arquivo funciona
+- [ ] Download de arquivo funciona
+- [ ] Auto-expiração funcionando
+- [ ] Backup rodando diariamente
+- [ ] Logs sem erros críticos
+- [ ] SSL/TLS válido (Let's Encrypt)
+
+## 🔄 Atualizações
+
+Para atualizar a aplicação:
+1. Nova imagem no Nexus via pipeline
+2. No Portainer: **Stacks** → **tempo-box** → **Editor**
+3. Clicar em **Update the stack**
+4. Portainer fará o rolling update automaticamente
+
+---
+
+**🎉 Tempo Box está pronto para produção!**
+Acesse: https://tempo-box.a3sitsolutions.com.br
+
 ## 🤝 Contribuição
 
 1. Fork o projeto
