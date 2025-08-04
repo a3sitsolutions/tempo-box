@@ -118,6 +118,7 @@ jobs:
         echo "📦 Salvando artefatos do build no cache local..."
         sudo mkdir -p ${{ env.BUILD_CACHE_DIR }}
         sudo chmod 755 ${{ env.BUILD_CACHE_DIR }}
+        sudo chown $USER:$USER ${{ env.BUILD_CACHE_DIR }}
         cp -r build/libs/* ${{ env.BUILD_CACHE_DIR }}/
         echo "✅ Artefatos salvos em: ${{ env.BUILD_CACHE_DIR }}"
         ls -la ${{ env.BUILD_CACHE_DIR }}/
