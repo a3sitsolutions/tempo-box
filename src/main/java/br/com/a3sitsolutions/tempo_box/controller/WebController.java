@@ -2,6 +2,11 @@ package br.com.a3sitsolutions.tempo_box.controller;
 
 import br.com.a3sitsolutions.tempo_box.entity.FileMetadata;
 import br.com.a3sitsolutions.tempo_box.service.FileStorageService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +25,7 @@ import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
+@Tag(name = "Web Interface", description = "Endpoints para a interface web do Tempo Box")
 public class WebController {
 
     private final FileStorageService fileStorageService;
@@ -135,12 +141,65 @@ public class WebController {
         return "redirect:/files";
     }
 
+    @Operation(
+            summary = "Login automático com Auth Token",
+            description = "Realiza login automático usando apenas o Auth Token via URL"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Redirecionamento para área de arquivos ou login com erro")
+    })
     @GetMapping("/auth/{authToken}")
-    public String autoAuthenticate(@PathVariable String authToken, HttpSession session) {
+    public String autoAuthenticate(
+            @Parameter(description = "Token de autenticação", example = "tempo-box-admin-token-2024")
+            @PathVariable String authToken, 
+            HttpSession session) {
         if (staticAuthToken.equals(authToken)) {
             session.setAttribute("authToken", authToken);
             return "redirect:/files";
         } else {
+            return "redirect:/login?error";
+        }
+    }
+
+    @Operation(
+            summary = "Login automático com Auth Token e ID Token",
+            description = """
+                    Realiza login automático usando Auth Token e ID Token via URL.
+                    
+                    ### Funcionalidade:
+                    - Autentica o usuário com Auth Token
+                    - Define ID Token para filtrar arquivos específicos
+                    - Redireciona para área de arquivos
+                    
+                    ### Exemplo de URL:
+                    ```
+                    https://tempo-box.a3sitsolutions.com.br/auth/tempo-box-admin-token-2024/token-identification-xpto
+                    ```
+                    """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Redirecionamento para área de arquivos ou login com erro")
+    })
+    @GetMapping("/auth/{authToken}/{idToken}")
+    public String autoAuthenticateWithIdToken(
+            @Parameter(description = "Token de autenticação", example = "tempo-box-admin-token-2024")
+            @PathVariable String authToken, 
+            @Parameter(description = "Token de identificação para filtrar arquivos", example = "token-identification-xpto")
+            @PathVariable String idToken, 
+            HttpSession session) {
+        System.out.println("Auto-authenticate - Auth token: '" + authToken + "'");
+        System.out.println("Auto-authenticate - ID token: '" + idToken + "'");
+        
+        if (staticAuthToken.equals(authToken)) {
+            session.setAttribute("authToken", authToken);
+            if (idToken != null && !idToken.trim().isEmpty() && !idToken.equals("null")) {
+                session.setAttribute("idToken", idToken);
+                System.out.println("Auto-authenticate - ID token stored in session: " + idToken);
+            }
+            System.out.println("Auto-authenticate - Redirecting to /files");
+            return "redirect:/files";
+        } else {
+            System.out.println("Auto-authenticate - Invalid auth token, redirecting to login with error");
             return "redirect:/login?error";
         }
     }

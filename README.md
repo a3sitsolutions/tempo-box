@@ -2,6 +2,8 @@
 
 Sistema web para upload e compartilhamento temporário de arquivos com controle de expiração automática. Desenvolvido em Spring Boot com interface web responsiva e API REST para integração.
 
+> 📚 **[Documentação Completa da API](API_DOCUMENTATION.md)** - Guia detalhado com exemplos práticos, casos de uso e integração CI/CD
+
 ## 🚀 Principais Funcionalidades
 
 - **Upload de arquivos** com duração personalizada (minutos/horas/dias)
@@ -154,7 +156,30 @@ docker run -d \
   a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:latest
 ```
 
+## 📚 Documentação da API
+
+### Swagger UI (Recomendado)
+- **Produção**: https://tempo-box.a3sitsolutions.com.br/swagger-ui.html 
+- **Local**: http://localhost:8080/swagger-ui.html
+
+### OpenAPI Specification
+- **Produção**: https://tempo-box.a3sitsolutions.com.br/v3/api-docs
+- **Local**: http://localhost:8080/v3/api-docs
+
+### Documentação Completa
+- **Arquivo**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Guia completo da API
+  - 📖 Visão geral e funcionalidades
+  - 🔐 Sistema de autenticação com tokens
+  - 📤 Upload e download detalhados
+  - 🔗 Login automático via URL
+  - 🔧 Integração CI/CD (GitHub Actions, Jenkins)
+  - 📊 Casos de uso práticos
+  - 🚀 Exemplos de código (JavaScript, Python, cURL)
+  - 🐳 Deploy e configuração Docker
+
 ## 🔗 API Endpoints
+
+> 💡 **Para exemplos detalhados e casos de uso completos, consulte a [Documentação da API](API_DOCUMENTATION.md)**
 
 ### Upload de Arquivo
 ```bash
@@ -162,6 +187,7 @@ curl -X POST http://localhost:8080/api/files/upload \
   -F "file=@arquivo.txt" \
   -F "storageDurationMinutes=60" \
   -F "authToken=tempo-box-admin-token-2024" \
+  -F "idToken=token-identification-xpto" \
   -F "accessToken=meu-token-personalizado"
 ```
 
@@ -174,8 +200,11 @@ curl -X GET http://localhost:8080/api/files/download/{fileId} \
 
 ### Autenticação Automática
 ```bash
-# Acesso direto autenticado
+# Acesso direto apenas com Auth Token
 curl -L http://localhost:8080/auth/tempo-box-admin-token-2024
+
+# Acesso direto com Auth Token e ID Token
+curl -L http://localhost:8080/auth/tempo-box-admin-token-2024/token-identification-xpto
 ```
 
 ## 🌐 Interface Web
@@ -185,8 +214,9 @@ curl -L http://localhost:8080/auth/tempo-box-admin-token-2024
 - **Token:** `tempo-box-admin-token-2024`
 
 ### Autenticação Automática
-- **URL:** `http://localhost:8080/auth/tempo-box-admin-token-2024`
-- Redireciona automaticamente para a área de arquivos
+- **Apenas Auth Token:** `http://localhost:8080/auth/tempo-box-admin-token-2024`
+- **Com ID Token:** `http://localhost:8080/auth/tempo-box-admin-token-2024/token-identification-xpto`
+- Redireciona automaticamente para a área de arquivos com filtros aplicados
 
 ### Gerenciamento de Arquivos
 - **URL:** `http://localhost:8080/files`
