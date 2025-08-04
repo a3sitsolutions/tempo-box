@@ -229,17 +229,37 @@ O projeto inclui pipeline automatizada para build e deploy:
 - `Dockerfile` - Configuração da imagem Docker
 - `docker-compose.yml` - Deploy completo com PostgreSQL
 
-**Fluxo da Pipeline:**
-1. **Trigger:** Push/Pull Request para main/master  
-2. **Runner:** `a3s-ubt-srv-maranguape-01` (self-hosted)
-3. **Etapas:**
-   - ✅ Checkout do código
-   - ✅ Setup JDK 17 + Cache Gradle
-   - ✅ Execução de testes
-   - ✅ Build da aplicação
-   - ✅ Login no Nexus Registry
-   - ✅ Build e Push da imagem Docker
-   - ✅ Cleanup automático
+**Fluxo da Pipeline (5 Jobs Separados):**
+
+1. **🧪 Test Job** - Execução de testes unitários
+   - Cache Gradle otimizado
+   - Testes paralelos com build cache
+   - Upload de relatórios de teste
+
+2. **🏗️ Build Job** - Build da aplicação 
+   - Reutiliza cache do job anterior
+   - Build paralelo otimizado
+   - Upload de artefatos (.jar)
+
+3. **🐳 Docker Job** - Build e Push da imagem
+   - Docker Buildx com cache de layers
+   - Cache incremental entre builds
+   - Push para Nexus Registry
+
+4. **🧹 Cleanup Job** - Limpeza automática
+   - Remove imagens locais
+   - Libera espaço em disco
+   - Docker system prune
+
+5. **📊 Summary Job** - Relatório final
+   - Status de todos os jobs
+   - URLs das imagens publicadas
+   - Resumo da execução
+
+**Triggers Disponíveis:**
+- 🔄 **Push/PR:** Execução automática
+- 🚀 **Manual:** Botão "Run workflow" com opções
+- ⚡ **Deploy Only:** Pula testes (modo rápido)
 
 **Imagens Geradas:**
 ```
@@ -251,6 +271,25 @@ a3s.nexus.maranguape.a3sitsolutions.com.br/tempo-box:<commit-sha>
 - `NEXUS_REPOSITORY`: a3s.nexus.maranguape.a3sitsolutions.com.br
 - `NEXUS_USER`: admin  
 - `NEXUS_PASSWORD`: ********
+
+### Otimizações de Performance
+- **🚀 Cache Gradle:** Dependências e wrapper cacheados
+- **🐳 Docker Buildx:** Cache de layers entre builds
+- **⚡ Build Paralelo:** `--parallel --build-cache`
+- **📦 Artefatos:** Reutilização entre jobs
+- **🔄 Jobs Condicionais:** Execução baseada em sucesso/falha
+
+### Execução Manual de Jobs
+```bash
+# Executar apenas testes
+gh workflow run deploy.yml
+
+# Deploy rápido (pular testes)  
+gh workflow run deploy.yml -f deploy_only=true
+
+# Via interface GitHub
+# Actions → 🚀 Build and Deploy to Nexus → Run workflow
+```
 
 ## 🚦 Status e Monitoramento
 

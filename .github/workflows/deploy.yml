@@ -1,31 +1,42 @@
-name: Build and Deploy to Nexus
+name: 🚀 Build and Deploy to Nexus
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: '🚀 Deploy only (skip tests and build)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   IMAGE_NAME: tempo-box
   IMAGE_TAG: ${{ github.sha }}
+  NEXUS_REGISTRY: ${{ secrets.NEXUS_REPOSITORY }}:8082
 
 jobs:
-  build-and-deploy:
+  # 🧪 Job 1: Tests
+  test:
+    name: 🧪 Run Tests
     runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    if: ${{ !inputs.deploy_only }}
     
     steps:
-    - name: Checkout code
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: ☕ Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Cache Gradle packages
-      uses: actions/cache@v3
+    - name: 📦 Cache Gradle packages
+      uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
@@ -34,34 +45,145 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Make gradlew executable
+    - name: 🔧 Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: Run tests
-      run: ./gradlew test
+    - name: 🧪 Run tests
+      run: ./gradlew test --parallel --build-cache
 
-    - name: Build application
-      run: ./gradlew build -x test
+    - name: 📊 Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: build/reports/tests/test/
+        retention-days: 7
 
-    - name: Login to Nexus Docker Registry
+  # 🏗️ Job 2: Build Application
+  build:
+    name: 🏗️ Build Application
+    runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || inputs.deploy_only)
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: ☕ Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: 📦 Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: 🔧 Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: 🏗️ Build application
+      run: ./gradlew build -x test --parallel --build-cache
+
+    - name: 📦 Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: build/libs/
+        retention-days: 7
+
+  # 🐳 Job 3: Docker Build & Push
+  docker:
+    name: 🐳 Docker Build & Push
+    runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    needs: [build]
+    if: always() && needs.build.result == 'success'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📦 Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+        path: build/libs/
+
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔐 Login to Nexus Docker Registry
       run: |
-        echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }} -u "${{ secrets.NEXUS_USER }}" --password-stdin
+        echo "🔐 Logging into Nexus Registry..."
+        echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ${{ env.NEXUS_REGISTRY }} -u "${{ secrets.NEXUS_USER }}" --password-stdin
 
-    - name: Build Docker image
+    - name: 🏗️ Build Docker image
       run: |
-        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
-        docker build -t ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest .
+        echo "🏗️ Building Docker images..."
+        docker buildx build \
+          --cache-from=type=local,src=/tmp/.buildx-cache \
+          --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+          --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+          --tag ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          --load \
+          .
 
-    - name: Push Docker image to Nexus
+    - name: 🚀 Push Docker images to Nexus
       run: |
-        docker push ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-        docker push ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest
+        echo "🚀 Pushing images to Nexus..."
+        docker push ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        docker push ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        echo "✅ Images pushed successfully!"
 
-    - name: Cleanup Docker images
+    - name: 🗂️ Move cache
       run: |
-        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
-        docker rmi ${{ secrets.NEXUS_REPOSITORY }}:${{ secrets.NEXUS_PORT }}/${{ env.IMAGE_NAME }}:latest || true
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
 
-    - name: Clean up Gradle cache
+  # 🧹 Job 4: Cleanup
+  cleanup:
+    name: 🧹 Cleanup
+    runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    needs: [docker]
+    if: always()
+    
+    steps:
+    - name: 🧹 Cleanup Docker images
       run: |
-        ./gradlew clean
+        echo "🧹 Cleaning up local Docker images..."
+        docker rmi ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || true
+        docker rmi ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
+        docker system prune -f || true
+        echo "✅ Cleanup completed!"
+
+  # 📊 Job 5: Summary
+  summary:
+    name: 📊 Pipeline Summary
+    runs-on: [self-hosted, a3s-ubt-srv-maranguape-01]
+    needs: [test, build, docker, cleanup]
+    if: always()
+    
+    steps:
+    - name: 📊 Pipeline Summary
+      run: |
+        echo "🎉 Pipeline Execution Summary"
+        echo "================================"
+        echo "🧪 Tests: ${{ needs.test.result || 'skipped' }}"
+        echo "🏗️  Build: ${{ needs.build.result || 'skipped' }}"
+        echo "🐳 Docker: ${{ needs.docker.result || 'skipped' }}"
+        echo "🧹 Cleanup: ${{ needs.cleanup.result || 'skipped' }}"
+        echo "================================"
+        if [[ "${{ needs.docker.result }}" == "success" ]]; then
+          echo "✅ Deploy successful! Images available at:"
+          echo "📦 ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "📦 ${{ env.NEXUS_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+        else
+          echo "❌ Deploy failed or skipped"
+        fi
