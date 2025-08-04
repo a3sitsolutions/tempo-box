@@ -39,6 +39,7 @@ public class FileStorageService {
             Integer storageDurationMinutes, 
             String accessToken, 
             String authToken,
+            String idToken,
             FileDescriptionDto descriptionDto) throws IOException {
 
         if (!staticAuthToken.equals(authToken)) {
@@ -77,6 +78,7 @@ public class FileStorageService {
         metadata.setContentType(file.getContentType());
         metadata.setAccessToken(generatedAccessToken);
         metadata.setAuthToken(authToken);
+        metadata.setIdToken(idToken);
         metadata.setStorageDurationMinutes(storageDurationMinutes);
         metadata.setCreatedAt(LocalDateTime.now());
         metadata.setExpiresAt(LocalDateTime.now().plusMinutes(storageDurationMinutes));
@@ -112,6 +114,14 @@ public class FileStorageService {
 
     public List<FileMetadata> getFilesByAuthToken(String authToken) {
         return fileMetadataRepository.findByAuthTokenAndExpiresAtAfter(authToken, LocalDateTime.now());
+    }
+
+    public List<FileMetadata> getFilesByAuthTokenAndIdToken(String authToken, String idToken) {
+        if (idToken != null && !idToken.trim().isEmpty()) {
+            return fileMetadataRepository.findByAuthTokenAndIdTokenAndExpiresAtAfter(authToken, idToken, LocalDateTime.now());
+        } else {
+            return fileMetadataRepository.findByAuthTokenAndExpiresAtAfter(authToken, LocalDateTime.now());
+        }
     }
 
     @Transactional

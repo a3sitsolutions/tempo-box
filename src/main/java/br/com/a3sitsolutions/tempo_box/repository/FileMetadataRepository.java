@@ -19,7 +19,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
     
     List<FileMetadata> findByAuthTokenAndExpiresAtAfter(String authToken, LocalDateTime now);
     
+    List<FileMetadata> findByAuthTokenAndIdTokenAndExpiresAtAfter(String authToken, String idToken, LocalDateTime now);
+    
     Optional<FileMetadata> findByFileIdAndAuthToken(String fileId, String authToken);
+    
+    Optional<FileMetadata> findByFileIdAndAuthTokenAndIdToken(String fileId, String authToken, String idToken);
     
     @Query("SELECT f FROM FileMetadata f WHERE f.expiresAt < ?1")
     List<FileMetadata> findExpiredFiles(LocalDateTime now);

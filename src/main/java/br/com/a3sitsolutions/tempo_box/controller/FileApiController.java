@@ -33,6 +33,7 @@ public class FileApiController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("storageDurationMinutes") Integer storageDurationMinutes,
             @RequestParam("authToken") String authToken,
+            @RequestParam(value = "idToken", required = false) String idToken,
             @RequestParam(value = "accessToken", required = false) String accessToken,
             @RequestParam(value = "repository", required = false) String repository,
             @RequestParam(value = "commit", required = false) String commit,
@@ -49,7 +50,7 @@ public class FileApiController {
             );
 
             FileUploadResponse response = fileStorageService.uploadFile(
-                    file, storageDurationMinutes, accessToken, authToken, description
+                    file, storageDurationMinutes, accessToken, authToken, idToken, description
             );
 
             return ResponseEntity.ok(response);

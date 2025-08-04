@@ -39,6 +39,9 @@ public class FileMetadata {
     @Column(name = "auth_token", nullable = false)
     private String authToken;
     
+    @Column(name = "id_token")
+    private String idToken;
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

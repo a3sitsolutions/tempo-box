@@ -41,12 +41,19 @@ public class WebController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestParam("token") String token, HttpSession session, Model model) {
+    public String login(@RequestParam("token") String token, 
+                       @RequestParam(value = "idToken", required = false) String idToken,
+                       HttpSession session, Model model) {
         System.out.println("Login - Session ID: " + session.getId());
         System.out.println("Login - Received token: '" + token + "'");
+        System.out.println("Login - Received idToken: '" + idToken + "'");
         
         if (staticAuthToken.equals(token)) {
             session.setAttribute("authToken", token);
+            if (idToken != null && !idToken.trim().isEmpty()) {
+                session.setAttribute("idToken", idToken);
+                System.out.println("Login - idToken stored in session: " + idToken);
+            }
             System.out.println("Login - Token stored in session, redirecting to /files");
             return "redirect:/files";
         } else {
@@ -59,8 +66,10 @@ public class WebController {
     @GetMapping("/files")
     public String filesPage(HttpSession session, Model model) {
         String authToken = (String) session.getAttribute("authToken");
+        String idToken = (String) session.getAttribute("idToken");
         System.out.println("Files page access - Session ID: " + session.getId());
         System.out.println("Files page access - Auth token from session: '" + authToken + "'");
+        System.out.println("Files page access - ID token from session: '" + idToken + "'");
         System.out.println("Files page access - Expected token: '" + staticAuthToken + "'");
         
         if (authToken == null || !staticAuthToken.equals(authToken)) {
@@ -69,8 +78,9 @@ public class WebController {
         }
 
         System.out.println("Files page access - Authentication successful, loading files");
-        List<FileMetadata> files = fileStorageService.getFilesByAuthToken(authToken);
+        List<FileMetadata> files = fileStorageService.getFilesByAuthTokenAndIdToken(authToken, idToken);
         model.addAttribute("files", files);
+        model.addAttribute("idToken", idToken); // Para exibir na interface se necessário
         return "files";
     }
 

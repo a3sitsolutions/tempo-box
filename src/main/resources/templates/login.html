@@ -231,10 +231,20 @@
                         <form th:action="@{/login}" method="post">
                             <div class="mb-4">
                                 <label for="token" class="form-label">
-                                    <i class="fas fa-key me-2"></i>Chave de Acesso
+                                    <i class="fas fa-key me-2"></i>Chave de Acesso (Auth Token)
                                 </label>
                                 <input type="password" class="form-control" id="token" name="token" 
                                        placeholder="Digite sua chave de acesso" required autocomplete="current-password">
+                            </div>
+                            <div class="mb-4">
+                                <label for="idToken" class="form-label">
+                                    <i class="fas fa-user-tag me-2"></i>Token de Identificação (ID Token)
+                                </label>
+                                <input type="text" class="form-control" id="idToken" name="idToken" 
+                                       placeholder="Digite seu token de identificação (opcional)" autocomplete="username">
+                                <div class="form-text text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>Usado para filtrar apenas seus arquivos
+                                </div>
                             </div>
                             <div th:if="${error}" class="alert alert-danger" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>Token inválido! Verifique sua chave de acesso.
