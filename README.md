@@ -33,11 +33,10 @@ Sistema web para upload e compartilhamento temporário de arquivos com controle 
 
 ### Pré-requisitos
 
-- Java 17+
-- PostgreSQL
-- Gradle
+- **Para desenvolvimento local:** Java 17+, PostgreSQL, Gradle
+- **Para Docker:** Docker e Docker Compose
 
-### Configuração do Banco de Dados
+### Configuração Local (Desenvolvimento)
 
 1. Crie um banco PostgreSQL:
 ```sql
@@ -46,10 +45,10 @@ CREATE USER admin WITH PASSWORD 'admin';
 GRANT ALL PRIVILEGES ON DATABASE tempo_box TO admin;
 ```
 
-2. Configure o `application.properties`:
+2. Configure o `application.properties` (já configurado):
 ```properties
-# Database Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/tempo_box
+# Database Configuration (Development - Local)
+spring.datasource.url=jdbc:postgresql://192.168.1.112:5432/tempo_box
 spring.datasource.username=admin
 spring.datasource.password=admin
 
@@ -58,6 +57,15 @@ app.file.upload-dir=./uploads
 app.auth.static-token=tempo-box-admin-token-2024
 app.cleanup.interval=3600000
 ```
+
+### Profiles de Configuração
+
+O projeto possui dois profiles:
+
+- **Default** (`application.properties`): Para desenvolvimento local
+- **Docker** (`application-docker.properties`): Para containers Docker
+
+O profile `docker` é ativado automaticamente no Docker Compose via `SPRING_PROFILES_ACTIVE=docker`.
 
 ### Executando a Aplicação
 
@@ -71,6 +79,80 @@ cd tempo-box
 ```
 
 A aplicação estará disponível em `http://localhost:8080`
+
+## 🐳 Deploy com Docker
+
+### Usando Docker Hub/Nexus
+
+A aplicação está disponível como imagem Docker no repositório Nexus:
+
+```bash
+# Login no repositório Nexus
+docker login a3s.nexus.maranguape.a3sitsolutions.com.br:8082
+
+# Pull da imagem
+docker pull a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+```
+
+### Deploy com Docker Compose (Recomendado)
+
+O Docker Compose está configurado para comunicação interna entre os serviços, **sem expor a porta do PostgreSQL** externamente.
+
+```bash
+# Clone o repositório
+git clone <repository-url>
+cd tempo-box
+
+# Inicie os serviços (PostgreSQL + Tempo Box)
+docker-compose up -d
+
+# Visualizar logs
+docker-compose logs -f
+
+# Parar os serviços
+docker-compose down
+
+# Visualizar status dos serviços
+docker-compose ps
+```
+
+**Características da configuração:**
+- ✅ PostgreSQL **não expõe porta externa** (apenas rede interna)
+- ✅ Comunicação via nome do serviço: `tempo-box-postgres:5432`
+- ✅ Health checks para garantir ordem de inicialização
+- ✅ Profile `docker` ativado automaticamente
+- ✅ Volumes persistentes para dados e uploads
+
+### Deploy Manual com Docker
+
+```bash
+# Execute apenas a aplicação (requer PostgreSQL externo)
+docker run -d \
+  --name tempo-box \
+  -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=docker \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://seu-postgres-host:5432/tempo_box \
+  -e SPRING_DATASOURCE_USERNAME=admin \
+  -e SPRING_DATASOURCE_PASSWORD=admin \
+  -e APP_AUTH_STATIC_TOKEN=tempo-box-admin-token-2024 \
+  -v $(pwd)/uploads:/app/uploads \
+  a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+```
+
+### Deploy com PostgreSQL Externo
+
+```bash
+# Para conectar com PostgreSQL externo (não Docker)
+docker run -d \
+  --name tempo-box \
+  -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://192.168.1.112:5432/tempo_box \
+  -e SPRING_DATASOURCE_USERNAME=admin \
+  -e SPRING_DATASOURCE_PASSWORD=admin \
+  -e APP_AUTH_STATIC_TOKEN=tempo-box-admin-token-2024 \
+  -v $(pwd)/uploads:/app/uploads \
+  a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+```
 
 ## 🔗 API Endpoints
 
@@ -136,6 +218,40 @@ A aplicação executa limpeza automática de arquivos expirados a cada hora (con
 - Armazenamento local em `./uploads`
 - Metadados opcionais para integração CI/CD
 
+## 🚀 CI/CD Pipeline
+
+### GitHub Actions
+
+O projeto inclui pipeline automatizada para build e deploy:
+
+**Arquivos da Pipeline:**
+- `.github/workflows/deploy.yml` - Pipeline principal
+- `Dockerfile` - Configuração da imagem Docker
+- `docker-compose.yml` - Deploy completo com PostgreSQL
+
+**Fluxo da Pipeline:**
+1. **Trigger:** Push/Pull Request para main/master  
+2. **Runner:** `a3s-ubt-srv-maranguape-01` (self-hosted)
+3. **Etapas:**
+   - ✅ Checkout do código
+   - ✅ Setup JDK 17 + Cache Gradle
+   - ✅ Execução de testes
+   - ✅ Build da aplicação
+   - ✅ Login no Nexus Registry
+   - ✅ Build e Push da imagem Docker
+   - ✅ Cleanup automático
+
+**Imagens Geradas:**
+```
+a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:<commit-sha>
+```
+
+### Secrets Configurados
+- `NEXUS_REPOSITORY`: a3s.nexus.maranguape.a3sitsolutions.com.br
+- `NEXUS_USER`: admin  
+- `NEXUS_PASSWORD`: ********
+
 ## 🚦 Status e Monitoramento
 
 ### Logs
@@ -145,26 +261,47 @@ A aplicação registra todas as operações importantes:
 - Limpeza automática
 - Erros e exceções
 
+### Docker Logs
+```bash
+# Logs da aplicação
+docker-compose logs -f app
+
+# Logs do PostgreSQL
+docker-compose logs -f postgres
+
+# Logs de todos os serviços
+docker-compose logs -f
+```
+
 ### Health Check
 - **URL:** `http://localhost:8080/actuator/health` (se Actuator estiver habilitado)
 
 ## 📝 Estrutura do Projeto
 
 ```
-src/
-├── main/
-│   ├── java/br/com/a3sitsolutions/tempo_box/
-│   │   ├── config/          # Configurações (Security)
-│   │   ├── controller/      # Controllers REST e Web
-│   │   ├── dto/            # Data Transfer Objects
-│   │   ├── entity/         # Entidades JPA
-│   │   ├── filter/         # Filtros de segurança
-│   │   ├── repository/     # Repositórios JPA
-│   │   └── service/        # Serviços de negócio
-│   └── resources/
-│       ├── templates/      # Templates Thymeleaf
-│       └── static/         # Recursos estáticos
-└── test/                   # Testes unitários
+tempo-box/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # Pipeline CI/CD
+├── src/
+│   ├── main/
+│   │   ├── java/br/com/a3sitsolutions/tempo_box/
+│   │   │   ├── config/         # Configurações (Security)
+│   │   │   ├── controller/     # Controllers REST e Web
+│   │   │   ├── dto/           # Data Transfer Objects
+│   │   │   ├── entity/        # Entidades JPA
+│   │   │   ├── filter/        # Filtros de segurança
+│   │   │   ├── repository/    # Repositórios JPA
+│   │   │   └── service/       # Serviços de negócio
+│   │   └── resources/
+│   │       ├── templates/     # Templates Thymeleaf
+│   │       └── static/        # Recursos estáticos
+│   └── test/                  # Testes unitários
+├── Dockerfile                 # Configuração Docker
+├── docker-compose.yml         # Deploy completo
+├── .dockerignore             # Exclusões Docker
+├── build.gradle              # Configuração Gradle
+└── README.md                 # Documentação
 ```
 
 ## 🤝 Contribuição

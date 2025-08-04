@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+build/reports
+build/tmp
+src/test
+*.md
+.gitignore
+gradlew
+gradlew.bat
+gradle/

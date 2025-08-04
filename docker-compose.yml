@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  tempo-box-postgres:
+    image: postgres:15-alpine
+    container_name: tempo-box-postgres
+    environment:
+      POSTGRES_DB: tempo_box
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tempo-box-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d tempo_box"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tempo-box-app:
+    image: a3s.nexus.maranguape.a3sitsolutions.com.br:8082/tempo-box:latest
+    container_name: tempo-box-app
+    depends_on:
+      tempo-box-postgres:
+        condition: service_healthy
+    environment:
+      # O profile docker já está definido no Dockerfile como padrão
+      # Sobrescrever configurações específicas apenas se necessário
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tempo-box-postgres:5432/tempo_box
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      APP_FILE_UPLOAD_DIR: /app/uploads
+      APP_AUTH_STATIC_TOKEN: tempo-box-admin-token-2024
+      APP_CLEANUP_INTERVAL: 3600000
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - tempo-box-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/auth/tempo-box-admin-token-2024 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  tempo-box-network:
+    driver: bridge
