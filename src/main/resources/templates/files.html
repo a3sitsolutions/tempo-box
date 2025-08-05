@@ -419,6 +419,7 @@
                                         <th><i class="fas fa-code-branch me-2"></i>Repo</th>
                                         <th><i class="fas fa-code-branch me-2"></i>Branch</th>
                                         <th><i class="fas fa-code-commit me-2"></i>Commit</th>
+                                        <th><i class="fas fa-comment me-2"></i>Mensagem</th>
                                         <th><i class="fas fa-cogs me-2"></i>Ações</th>
                                     </tr>
                                 </thead>
@@ -469,6 +470,14 @@
                                                   class="small" 
                                                   th:text="${#strings.substring(file.description.commit, 0, T(java.lang.Math).min(8, file.description.commit.length()))}"></code>
                                             <span th:unless="${file.description != null and file.description.commit != null}" 
+                                                  class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${file.description != null and file.description.commitMessage != null}" 
+                                                  class="small fw-medium" 
+                                                  th:text="${#strings.abbreviate(file.description.commitMessage, 50)}"
+                                                  th:title="${file.description.commitMessage}"></span>
+                                            <span th:unless="${file.description != null and file.description.commitMessage != null}" 
                                                   class="text-muted">-</span>
                                         </td>
                                         <td>
